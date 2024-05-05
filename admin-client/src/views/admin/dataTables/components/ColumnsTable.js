@@ -1,147 +1,201 @@
-import {
-  Flex,
-  Table,
-  Tbody,
-  Td,
-  Text,
-  Th,
-  Thead,
-  Tr,
-  useColorModeValue,
-} from "@chakra-ui/react";
-import React, { useMemo } from "react";
-import {
-  useGlobalFilter,
-  usePagination,
-  useSortBy,
-  useTable,
-} from "react-table";
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import { Box } from '@chakra-ui/react';
+import { Button, FormControl, Input, VStack, Text } from '@chakra-ui/react';
+import * as Yup from 'yup';
+import moment from 'moment';
+import { HStack } from '@chakra-ui/react';
+import { SimpleGrid } from '@chakra-ui/react';
 
-// Custom components
-import Card from "components/card/Card";
-import Menu from "components/menu/MainMenu";
-export default function ColumnsTable(props) {
-  const { columnsData, tableData } = props;
 
-  const columns = useMemo(() => columnsData, [columnsData]);
-  const data = useMemo(() => tableData, [tableData]);
+const VoucherManagement = () => {
+  const [vouchers, setVouchers] = useState([]);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [newVoucher, setNewVoucher] = useState({
+    code: '',
+    name: '',
+    percent: '',
+    quantity: '',
+    expiryDate: ''
+  });
+  const [validationErrors, setValidationErrors] = useState({});
 
-  const tableInstance = useTable(
-    {
-      columns,
-      data,
-    },
-    useGlobalFilter,
-    useSortBy,
-    usePagination
-  );
+  useEffect(() => {
+    fetchVouchers();
+  }, []);
 
-  const {
-    getTableProps,
-    getTableBodyProps,
-    headerGroups,
-    page,
-    prepareRow,
-    initialState,
-  } = tableInstance;
-  initialState.pageSize = 5;
+  const fetchVouchers = async () => {
+    try {
+      const response = await axios.get('http://localhost:3008/api/vouchers');
+      setVouchers(response.data);
+    } catch (error) {
+      console.error('Error fetching vouchers:', error);
+    }
+  };
 
-  const textColor = useColorModeValue("secondaryGray.900", "white");
-  const borderColor = useColorModeValue("gray.200", "whiteAlpha.100");
+  const validationSchema = Yup.object().shape({
+    code: Yup.string().required('Code is required'),
+    name: Yup.string().required('Name is required'),
+    percent: Yup.number().typeError('Percent must be a number').required('Percent is required').min(0, 'Percent must be greater than or equal to 0').max(100, 'Percent must be less than or equal to 100'),
+    quantity: Yup.number().typeError('Quantity must be a number').min(0, 'Quantity must be greater than or equal to 0'),
+    expiryDate: Yup.date().typeError('Expiry Date must be a date').required('Expiry Date is required')
+  });
+
+  const handleCreateVoucher = async () => {
+    try {
+      await validationSchema.validate(newVoucher, { abortEarly: false });
+      setValidationErrors({});
+      
+      // Kiểm tra xem mã giảm giá đã tồn tại chưa
+      const existingVoucher = vouchers.find(voucher => voucher.code === newVoucher.code);
+      if (existingVoucher) {
+        setErrorMessage('Voucher code already exists');
+        return; // Dừng việc tạo mới mã giảm giá
+      }
+  
+      // Nếu không tồn tại mã giảm giá, tiến hành tạo mới
+      await axios.post('http://localhost:3008/api/vouchers', newVoucher);
+      setNewVoucher({
+        code: '',
+        name: '',
+        percent: '',
+        quantity: '',
+        expiryDate: ''
+      });
+      fetchVouchers();
+    } catch (error) {
+      if (error.name === 'ValidationError') {
+        const errors = {};
+        error.inner.forEach(err => {
+          errors[err.path] = err.message;
+        });
+        setValidationErrors(errors);
+      } else {
+        console.error('Error creating voucher:', error);
+      }
+    }
+  };
+  
+  
+
+  const handleUpdateVoucher = async (code) => {
+    try {
+      await validationSchema.validate(newVoucher, { abortEarly: false });
+      setValidationErrors({});
+      await axios.put(`http://localhost:3008/api/vouchers/${code}`, newVoucher);
+      fetchVouchers();
+    } catch (error) {
+      if (error.name === 'ValidationError') {
+        const errors = {};
+        error.inner.forEach(err => {
+          errors[err.path] = err.message;
+        });
+        setValidationErrors(errors);
+      } else {
+        console.error(`Error updating voucher with code ${code}:`, error);
+      }
+    }
+  };
+
+  const handleDeleteVoucher = async (code) => {
+    try {
+      await axios.delete(`http://localhost:3008/api/vouchers/${code}`);
+      fetchVouchers();
+    } catch (error) {
+      console.error(`Error deleting voucher with code ${code}:`, error);
+    }
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setNewVoucher({ ...newVoucher, [name]: value });
+
+    // Kiểm tra lỗi khi nhập liệu
+    try {
+      if (name === 'expiryDate') {
+        if (!moment(value, 'YYYY-MM-DD', true).isValid()) {
+          throw new Error('Expiry Date must be in the format YYYY-MM-DD');
+        }
+      } else {
+        validationSchema.validateSyncAt(name, { [name]: value });
+      }
+      setValidationErrors(prevErrors => ({ ...prevErrors, [name]: '' }));
+    } catch (error) {
+      setValidationErrors(prevErrors => ({ ...prevErrors, [name]: error.message }));
+    }
+  };
+
   return (
-    <Card
-      direction='column'
-      w='100%'
-      px='0px'
-      overflowX={{ sm: "scroll", lg: "hidden" }}>
-      <Flex px='25px' justify='space-between' mb='20px' align='center'>
-        <Text
-          color={textColor}
-          fontSize='22px'
-          fontWeight='700'
-          lineHeight='100%'>
-          4-Column Table
-        </Text>
-        <Menu />
-      </Flex>
-      <Table {...getTableProps()} variant='simple' color='gray.500' mb='24px'>
-        <Thead>
-          {headerGroups.map((headerGroup, index) => (
-            <Tr {...headerGroup.getHeaderGroupProps()} key={index}>
-              {headerGroup.headers.map((column, index) => (
-                <Th
-                  {...column.getHeaderProps(column.getSortByToggleProps())}
-                  pe='10px'
-                  key={index}
-                  borderColor={borderColor}>
-                  <Flex
-                    justify='space-between'
-                    align='center'
-                    fontSize={{ sm: "10px", lg: "12px" }}
-                    color='gray.400'>
-                    {column.render("Header")}
-                  </Flex>
-                </Th>
-              ))}
-            </Tr>
-          ))}
-        </Thead>
-        <Tbody {...getTableBodyProps()}>
-          {page.map((row, index) => {
-            prepareRow(row);
-            return (
-              <Tr {...row.getRowProps()} key={index}>
-                {row.cells.map((cell, index) => {
-                  let data = "";
-                  if (cell.column.Header === "NAME") {
-                    data = (
-                      <Flex align='center'>
-                        <Text color={textColor} fontSize='sm' fontWeight='700'>
-                          {cell.value}
-                        </Text>
-                      </Flex>
-                    );
-                  } else if (cell.column.Header === "PROGRESS") {
-                    data = (
-                      <Flex align='center'>
-                        <Text
-                          me='10px'
-                          color={textColor}
-                          fontSize='sm'
-                          fontWeight='700'>
-                          {cell.value}%
-                        </Text>
-                      </Flex>
-                    );
-                  } else if (cell.column.Header === "QUANTITY") {
-                    data = (
-                      <Text color={textColor} fontSize='sm' fontWeight='700'>
-                        {cell.value}
-                      </Text>
-                    );
-                  } else if (cell.column.Header === "DATE") {
-                    data = (
-                      <Text color={textColor} fontSize='sm' fontWeight='700'>
-                        {cell.value}
-                      </Text>
-                    );
-                  }
-                  return (
-                    <Td
-                      {...cell.getCellProps()}
-                      key={index}
-                      fontSize={{ sm: "14px" }}
-                      minW={{ sm: "150px", md: "200px", lg: "auto" }}
-                      borderColor='transparent'>
-                      {data}
-                    </Td>
-                  );
-                })}
-              </Tr>
-            );
-          })}
-        </Tbody>
-      </Table>
-    </Card>
+    <VStack spacing="4" alignItems="flex-start">
+      {/* Form nhập thông tin voucher */}
+      <FormControl>
+        <Input
+          name="code"
+          value={newVoucher.code}
+          placeholder="Code"
+          onChange={handleInputChange}
+        />
+        {validationErrors.code && <Text color="red">{validationErrors.code}</Text>}
+        <Input
+          name="name"
+          value={newVoucher.name}
+          placeholder="Name"
+          onChange={handleInputChange}
+        />
+        {validationErrors.name && <Text color="red">{validationErrors.name}</Text>}
+        <Input
+          name="percent"
+          value={newVoucher.percent}
+          placeholder="Percent"
+          onChange={handleInputChange}
+        />
+        {validationErrors.percent && <Text color="red">{validationErrors.percent}</Text>}
+        <Input
+          name="quantity"
+          value={newVoucher.quantity}
+          placeholder="Quantity"
+          onChange={handleInputChange}
+        />
+        {validationErrors.quantity && <Text color="red">{validationErrors.quantity}</Text>}
+        <Input
+          name="expiryDate"
+          value={newVoucher.expiryDate}
+          placeholder="Expiry Date"
+          onChange={handleInputChange}
+        />
+        {validationErrors.expiryDate && <Text color="red">{validationErrors.expiryDate}</Text>}
+        {errorMessage && <Text color="red">{errorMessage}</Text>}
+      </FormControl>
+
+      {/* Nút tạo voucher mới */}
+      <Button onClick={handleCreateVoucher} colorScheme="teal">Create Voucher</Button>
+
+      {/* Danh sách mã giảm giá */}
+      <SimpleGrid columns={{ base: 1, md: 3 }} spacing="4" width="100%">
+        {vouchers.map((voucher, index) => (
+          <Box
+            key={index}
+            border="1px"
+            borderRadius="md"
+            p="4"
+            bg="gray.100"
+            _hover={{ bg: "gray.200" }}
+          >
+            <Text fontSize="lg" fontWeight="bold">{voucher.code}</Text>
+            <Text fontSize="sm">{voucher.name}</Text>
+            <Text fontSize="sm">Discount: {voucher.percent}%</Text>
+            <Text fontSize="sm">Quantity: {voucher.quantity}</Text>
+            <Text fontSize="sm">Expires on: {moment(voucher.expiryDate).format('DD/MM/YYYY')}</Text>
+            <HStack spacing="2">
+              {/* Nút cập nhật và xóa */}
+              <Button onClick={() => handleUpdateVoucher(voucher.code)} colorScheme="blue">Update</Button>
+              <Button onClick={() => handleDeleteVoucher(voucher.code)} colorScheme="red">Delete</Button>
+            </HStack>
+          </Box>
+        ))}
+      </SimpleGrid>
+    </VStack>
   );
-}
+};
+
+export default VoucherManagement;
