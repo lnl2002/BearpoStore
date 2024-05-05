@@ -56,3 +56,11 @@ export const deleteCategory = async (req, res, next) => {
         next(error);
     }
 };
+
+export default {
+    createCategory,
+    getAllCategories,
+    getCategoryById,
+    updateCategory,
+    deleteCategory
+};

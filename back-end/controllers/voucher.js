@@ -47,12 +47,17 @@ export const updateVoucher = async (req, res, next) => {
 export const deleteVoucher = async (req, res, next) => {
     try {
         const { code } = req.params;
-        const voucher = await voucherService.deleteVoucher(code);
-        if (!voucher) {
-            return res.status(404).json({ message: "Voucher not found" });
-        }
+        await voucherService.deleteVoucher(code);
         res.status(204).send();
     } catch (error) {
         next(error);
     }
+};
+
+export default {
+    createVoucher,
+    getAllVouchers,
+    getVoucherByCode,
+    updateVoucher,
+    deleteVoucher
 };

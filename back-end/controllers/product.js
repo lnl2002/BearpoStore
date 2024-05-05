@@ -28,3 +28,9 @@ export const deleteProduct = async (req, res, next) => {
         next(error);
     }
 };
+
+export default {
+    createProduct,
+    updateProduct,
+    deleteProduct
+};

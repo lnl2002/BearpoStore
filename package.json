@@ -1,0 +1,7 @@
+{
+  "dependencies": {
+    "react-toastify": "^10.0.5",
+    "suneditor": "^2.46.2",
+    "suneditor-react": "^3.6.1"
+  }
+}
