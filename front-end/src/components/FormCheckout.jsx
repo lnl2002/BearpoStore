@@ -52,14 +52,14 @@ function FormCheckout() {
     const totalQuantity = listCart.reduce((acc, p) => (acc + p.quantity), 0);
     const total = listCart.reduce((acc, product) => {
         return acc + (product.quantity * (product.sellPrice - (product.sellPrice * (product.discount / 100))))
-    }, 0).toFixed(3);
+    }, 0);
     const totalP = listCart.reduce((acc, product) => {
         return acc + (product.quantity * (product.importPrice));
-    }, 0).toFixed(3);
+    }, 0);
     const discountTotal = total * (percentVoucher / 100);
     const totalEnd = total - discountTotal;
     const totalProf = totalEnd - totalP;
-
+    
     const [postData, setPostData] = useState({
         customerName: '',
         customerPhone: '',
