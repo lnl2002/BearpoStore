@@ -53,14 +53,14 @@ function FormCheckout() {
     const totalQuantity = listCart.reduce((acc, p) => (acc + p.quantity), 0);
     const total = listCart.reduce((acc, product) => {
         return acc + (product.quantity * (product.sellPrice - (product.sellPrice * (product.discount / 100))))
-    }, 0).toFixed(3);
+    }, 0);
     const totalP = listCart.reduce((acc, product) => {
         return acc + (product.quantity * (product.importPrice));
-    }, 0).toFixed(3);
+    }, 0);
     const discountTotal = total * (percentVoucher / 100);
     const totalEnd = total - discountTotal;
     const totalProf = totalEnd - totalP;
-
+    
     const [postData, setPostData] = useState({
         customerName: '',
         customerPhone: '',
@@ -250,8 +250,7 @@ function FormCheckout() {
                     <Modal.Title>Chọn mã khuyến mãi</Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
-                    {/* Table hiển thị thông tin mã khuyến mãi */}
-                    <table className="table">
+                    <table className="table table-sm">
                         <thead>
                             <tr className='text-center'>
                                 <th scope="col">Mã</th>
@@ -413,25 +412,27 @@ function FormCheckout() {
                                                 <tr key={product._id} style={{ marginBottom: '20px' }}>
                                                     <td><img src={product.image} alt={product.name} style={{ width: '50px', height: '50px', marginRight: '10px' }} /></td>
                                                     <td style={{ width: "35%" }}><p>{product.name}</p></td>
-                                                    <td className='text-center'><div>
-                                                        <GrSubtractCircle style={{ cursor: "pointer" }} onClick={() => handleSubProduct(product, quantity)} color='#057130' size={20} />
-                                                        <input
-                                                            onChange={(e) => handleChangeQuantity(product._id, parseInt(e.target.value))}
-                                                            type='number'
-                                                            value={quantityInCart}
-                                                            style={{ width: "40%", height: "24px" }}
-                                                            className='px-1 text-center border-0 border-bottom'
-                                                            onKeyDown={(e) => {
-                                                                const value = e.target.value;
-                                                                if (e.key === '-' || (value === '' && e.key === '0')) {
-                                                                    e.preventDefault();
-                                                                }
-                                                            }}
-                                                            onFocus={(e) => e.target.classList.add('no-outline')}
-                                                            onBlur={(e) => e.target.classList.remove('no-outline')}
-                                                        />
-                                                        <GrAddCircle style={{ cursor: "pointer" }} onClick={() => handleAddProduct(product, quantityInCart)} color='#057130' size={20} />
-                                                    </div></td>
+                                                    <td className='text-center'>
+                                                        <div className='d-flex align-items-center'>
+                                                            <GrSubtractCircle style={{ cursor: "pointer" }} onClick={() => handleSubProduct(product, quantity)} color='#057130' size={20} />
+                                                            <input
+                                                                onChange={(e) => handleChangeQuantity(product._id, parseInt(e.target.value))}
+                                                                type='number'
+                                                                value={quantityInCart}
+                                                                style={{ width: "40%", height: "24px" }}
+                                                                className='px-1 text-center border-0 border-bottom'
+                                                                onKeyDown={(e) => {
+                                                                    const value = e.target.value;
+                                                                    if (e.key === '-' || (value === '' && e.key === '0')) {
+                                                                        e.preventDefault();
+                                                                    }
+                                                                }}
+                                                                onFocus={(e) => e.target.classList.add('no-outline')}
+                                                                onBlur={(e) => e.target.classList.remove('no-outline')}
+                                                            />
+                                                            <GrAddCircle style={{ cursor: "pointer" }} onClick={() => handleAddProduct(product, quantityInCart)} color='#057130' size={20} />
+                                                        </div>
+                                                        </td>
                                                     <td className='text-center'><p>{((product.sellPrice - (product.sellPrice * (product.discount / 100))) * product.quantity).toLocaleString('en-US', {
                                                         minimumFractionDigits: 0,
                                                         maximumFractionDigits: 3,
